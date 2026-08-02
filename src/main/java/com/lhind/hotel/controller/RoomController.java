@@ -3,6 +3,9 @@ package com.lhind.hotel.controller;
 import com.lhind.hotel.entity.Room;
 import com.lhind.hotel.entity.RoomStatus;
 import com.lhind.hotel.service.RoomService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -14,6 +17,10 @@ import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/rooms")
+@Tag(
+        name = "Rooms",
+        description = "Room Management — demonstrates Log4j2 levels TRACE → FATAL"
+)
 public class RoomController {
 
     private final RoomService roomService;
@@ -22,12 +29,24 @@ public class RoomController {
         this.roomService = roomService;
     }
 
-    // Krijon një dhomë për një hotel
+    @Operation(
+            summary = "Create a room",
+            description = """
+                    Creates a room for an existing hotel.
+                    Logs INFO on success, WARN when the hotel does not exist
+                    and ERROR when the room number already exists.
+                    """
+    )
     @PostMapping("/hotel/{hotelId}")
     @PreAuthorize("hasAnyRole('ADMIN', 'RECEPTIONIST')")
-
     public ResponseEntity<Room> createRoom(
+            @Parameter(
+                    description = "ID of the hotel",
+                    example = "1",
+                    required = true
+            )
             @PathVariable Long hotelId,
+
             @Valid @RequestBody Room room
     ) {
         Room createdRoom =
@@ -44,71 +63,100 @@ public class RoomController {
                 .body(createdRoom);
     }
 
-    // Kthen të gjitha dhomat
+    @Operation(
+            summary = "Get all rooms",
+            description = "Returns all rooms and logs the number of results"
+    )
     @GetMapping
     @PreAuthorize("isAuthenticated()")
-
     public ResponseEntity<List<Room>> getAllRooms() {
-
-        List<Room> rooms = roomService.getAllRooms();
-
-        return ResponseEntity.ok(rooms);
+        return ResponseEntity.ok(
+                roomService.getAllRooms()
+        );
     }
 
-    // Kthen dhomën sipas ID-së
+    @Operation(
+            summary = "Get room by ID",
+            description = "Logs INFO when found and WARN when not found"
+    )
     @GetMapping("/{roomId}")
     @PreAuthorize("isAuthenticated()")
-
     public ResponseEntity<Room> getRoomById(
+            @Parameter(
+                    description = "Unique ID of the room",
+                    example = "1",
+                    required = true
+            )
             @PathVariable Long roomId
     ) {
-        Optional<Room> optionalRoom =
+        Optional<Room> room =
                 roomService.getRoomById(roomId);
 
-        if (optionalRoom.isEmpty()) {
-            return ResponseEntity.notFound().build();
-        }
-
-        return ResponseEntity.ok(optionalRoom.get());
+        return room
+                .map(ResponseEntity::ok)
+                .orElseGet(() ->
+                        ResponseEntity.notFound().build()
+                );
     }
 
-    // Kthen dhomat e një hoteli
+    @Operation(
+            summary = "Get rooms by hotel",
+            description = "Returns all rooms associated with a hotel"
+    )
     @GetMapping("/hotel/{hotelId}")
     @PreAuthorize("hasAnyRole('ADMIN', 'RECEPTIONIST')")
-
     public ResponseEntity<List<Room>> getRoomsByHotelId(
+            @Parameter(
+                    description = "ID of the hotel",
+                    example = "1",
+                    required = true
+            )
             @PathVariable Long hotelId
     ) {
-        List<Room> rooms =
-                roomService.getRoomsByHotelId(hotelId);
-
-        return ResponseEntity.ok(rooms);
+        return ResponseEntity.ok(
+                roomService.getRoomsByHotelId(hotelId)
+        );
     }
 
-    // Kthen dhomat sipas statusit
+    @Operation(
+            summary = "Get rooms by status",
+            description = "Returns rooms that match the supplied status"
+    )
     @GetMapping("/status/{status}")
     @PreAuthorize("hasAnyRole('ADMIN', 'RECEPTIONIST')")
-
     public ResponseEntity<List<Room>> getRoomsByStatus(
+            @Parameter(
+                    description = "Room status",
+                    example = "AVAILABLE",
+                    required = true
+            )
             @PathVariable RoomStatus status
     ) {
-        List<Room> rooms =
-                roomService.getRoomsByStatus(status);
-
-        return ResponseEntity.ok(rooms);
+        return ResponseEntity.ok(
+                roomService.getRoomsByStatus(status)
+        );
     }
 
-    // Përditëson të dhënat e dhomës
+    @Operation(
+            summary = "Update a room",
+            description = """
+                    Updates room information.
+                    Logs INFO on success, WARN when not found
+                    and ERROR when the room number conflicts.
+                    """
+    )
     @PutMapping("/{roomId}")
-    @PreAuthorize("hasAnyRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Room> updateRoom(
+            @Parameter(
+                    description = "ID of the room to update",
+                    example = "1",
+                    required = true
+            )
             @PathVariable Long roomId,
+
             @Valid @RequestBody Room room
     ) {
-        if (roomService.getRoomById(roomId).isEmpty()) {
-            return ResponseEntity.notFound().build();
-        }
-
         Room updatedRoom =
                 roomService.updateRoom(roomId, room);
 
@@ -121,12 +169,25 @@ public class RoomController {
         return ResponseEntity.ok(updatedRoom);
     }
 
-    // Përditëson vetëm statusin e dhomës
+    @Operation(
+            summary = "Update room status",
+            description = "Updates only the status of an existing room"
+    )
     @PatchMapping("/{roomId}/status")
     @PreAuthorize("hasAnyRole('ADMIN', 'RECEPTIONIST')")
-
     public ResponseEntity<Room> updateRoomStatus(
+            @Parameter(
+                    description = "ID of the room",
+                    example = "1",
+                    required = true
+            )
             @PathVariable Long roomId,
+
+            @Parameter(
+                    description = "New room status",
+                    example = "OCCUPIED",
+                    required = true
+            )
             @RequestParam RoomStatus status
     ) {
         Room updatedRoom =
@@ -139,14 +200,22 @@ public class RoomController {
         return ResponseEntity.ok(updatedRoom);
     }
 
-    // Fshin dhomën
+    @Operation(
+            summary = "Delete a room",
+            description = "Logs INFO on success and ERROR when not found"
+    )
     @DeleteMapping("/{roomId}")
-    @PreAuthorize("hasAnyRole('ADMIN')")
-
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> deleteRoom(
+            @Parameter(
+                    description = "ID of the room to delete",
+                    example = "1",
+                    required = true
+            )
             @PathVariable Long roomId
     ) {
-        boolean deleted = roomService.deleteRoom(roomId);
+        boolean deleted =
+                roomService.deleteRoom(roomId);
 
         if (!deleted) {
             return ResponseEntity.notFound().build();

@@ -1,0 +1,227 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="WARN" monitorInterval="30">
+
+    <Properties>
+
+        <!-- Log pattern -->
+        <Property name="LOG_PATTERN">
+            %d{yyyy-MM-dd HH:mm:ss} %-5level %-35logger{1} - %msg%n
+        </Property>
+
+        <!-- Log file -->
+        <Property name="LOG_FILE">
+            logs/hotel.log
+        </Property>
+
+    </Properties>
+
+    <Appenders>
+
+        <!-- Console Appender -->
+        <Console name="ConsoleAppender" target="SYSTEM_OUT">
+            <PatternLayout pattern="${LOG_PATTERN}"/>
+        </Console>
+
+        <!-- File Appender -->
+        <File name="FileAppender"
+              fileName="${LOG_FILE}"
+              append="true">
+
+            <PatternLayout pattern="${LOG_PATTERN}"/>
+
+        </File>
+
+    </Appenders>
+
+    <Loggers>
+
+        <!-- CONTROLLERS         -->
+
+        <!-- Authentication Controller -->
+        <Logger name="com.lhind.hotel.controller.AuthController"
+                level="INFO"
+                additivity="false">
+
+            <AppenderRef ref="ConsoleAppender"/>
+            <AppenderRef ref="FileAppender"/>
+
+        </Logger>
+
+        <!-- Hotel Controller -->
+        <Logger name="com.lhind.hotel.controller.HotelController"
+                level="INFO"
+                additivity="false">
+
+            <AppenderRef ref="ConsoleAppender"/>
+            <AppenderRef ref="FileAppender"/>
+
+        </Logger>
+
+        <!-- Room Controller -->
+        <Logger name="com.lhind.hotel.controller.RoomController"
+                level="INFO"
+                additivity="false">
+
+            <AppenderRef ref="ConsoleAppender"/>
+            <AppenderRef ref="FileAppender"/>
+
+        </Logger>
+
+        <!-- Guest Controller -->
+        <Logger name="com.lhind.hotel.controller.GuestController"
+                level="INFO"
+                additivity="false">
+
+            <AppenderRef ref="ConsoleAppender"/>
+            <AppenderRef ref="FileAppender"/>
+
+        </Logger>
+
+        <!-- Guest Profile Controller -->
+        <Logger name="com.lhind.hotel.controller.GuestProfileController"
+                level="INFO"
+                additivity="false">
+
+            <AppenderRef ref="ConsoleAppender"/>
+            <AppenderRef ref="FileAppender"/>
+
+        </Logger>
+
+        <!-- Reservation Controller -->
+        <Logger name="com.lhind.hotel.controller.ReservationController"
+                level="INFO"
+                additivity="false">
+
+            <AppenderRef ref="ConsoleAppender"/>
+            <AppenderRef ref="FileAppender"/>
+
+        </Logger>
+
+        <!-- SERVICES            -->
+
+        <!-- Authentication Service -->
+        <Logger name="com.lhind.hotel.service.AuthService"
+                level="DEBUG"
+                additivity="false">
+
+            <AppenderRef ref="ConsoleAppender"/>
+            <AppenderRef ref="FileAppender"/>
+
+        </Logger>
+
+        <!-- Hotel Service -->
+        <Logger name="com.lhind.hotel.service.HotelServiceImpl"
+                level="DEBUG"
+                additivity="false">
+
+            <AppenderRef ref="ConsoleAppender"/>
+            <AppenderRef ref="FileAppender"/>
+
+        </Logger>
+
+        <!-- Room Service -->
+        <Logger name="com.lhind.hotel.service.RoomServiceImpl"
+                level="DEBUG"
+                additivity="false">
+
+            <AppenderRef ref="ConsoleAppender"/>
+            <AppenderRef ref="FileAppender"/>
+
+        </Logger>
+
+        <!-- Guest Service -->
+        <Logger name="com.lhind.hotel.service.GuestServiceImpl"
+                level="DEBUG"
+                additivity="false">
+
+            <AppenderRef ref="ConsoleAppender"/>
+            <AppenderRef ref="FileAppender"/>
+
+        </Logger>
+
+        <!-- Guest Profile Service -->
+        <Logger name="com.lhind.hotel.service.GuestProfileServiceImpl"
+                level="DEBUG"
+                additivity="false">
+
+            <AppenderRef ref="ConsoleAppender"/>
+            <AppenderRef ref="FileAppender"/>
+
+        </Logger>
+
+        <!-- Reservation Service -->
+        <Logger name="com.lhind.hotel.service.ReservationServiceImpl"
+                level="DEBUG"
+                additivity="false">
+
+            <AppenderRef ref="ConsoleAppender"/>
+            <AppenderRef ref="FileAppender"/>
+
+        </Logger>
+
+        <!-- SECURITY           -->
+
+        <!-- Custom User Details -->
+        <Logger name="com.lhind.hotel.security.CustomUserDetailsService"
+                level="DEBUG"
+                additivity="false">
+
+            <AppenderRef ref="ConsoleAppender"/>
+            <AppenderRef ref="FileAppender"/>
+
+        </Logger>
+
+        <!-- JWT Filter -->
+        <Logger name="com.lhind.hotel.security.jwt.JwtAuthenticationFilter"
+                level="DEBUG"
+                additivity="false">
+
+            <AppenderRef ref="ConsoleAppender"/>
+            <AppenderRef ref="FileAppender"/>
+
+        </Logger>
+
+        <!-- JWT Service -->
+        <Logger name="com.lhind.hotel.security.jwt.JwtService"
+                level="DEBUG"
+                additivity="false">
+
+            <AppenderRef ref="ConsoleAppender"/>
+            <AppenderRef ref="FileAppender"/>
+
+        </Logger>
+
+        <!-- EXCEPTION HANDLER          -->
+
+        <Logger name="com.lhind.hotel.exception.GlobalExceptionHandler"
+                level="WARN"
+                additivity="false">
+
+            <AppenderRef ref="ConsoleAppender"/>
+            <AppenderRef ref="FileAppender"/>
+
+        </Logger>
+
+        <!-- UTIL     -->
+
+        <Logger name="com.lhind.hotel.util.DemoUserSeeder"
+                level="INFO"
+                additivity="false">
+
+            <AppenderRef ref="ConsoleAppender"/>
+            <AppenderRef ref="FileAppender"/>
+
+        </Logger>
+
+        <!-- ROOT LOGGER  -->
+
+        <Root level="INFO">
+
+            <AppenderRef ref="ConsoleAppender"/>
+            <AppenderRef ref="FileAppender"/>
+
+        </Root>
+
+    </Loggers>
+
+</Configuration>

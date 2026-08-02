@@ -12,9 +12,15 @@ public interface HotelService {
     List<Hotel> getAllHotels();
 
     Optional<Hotel> getHotelById(Long hotelId);
-    List<Hotel> getHotelsByName(String name);
+
     List<Hotel> getHotelsByCity(String city);
+
+    List<Hotel> getHotelsByName(String name);
+
     Hotel updateHotel(Long hotelId, Hotel hotel);
 
-    boolean deleteHotel(Long hotelId);
+    boolean deleteHotel(
+            Long hotelId,
+            boolean dbAvailable
+    );
 }

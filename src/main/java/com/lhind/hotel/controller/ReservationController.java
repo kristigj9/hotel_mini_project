@@ -2,6 +2,9 @@ package com.lhind.hotel.controller;
 
 import com.lhind.hotel.entity.Reservation;
 import com.lhind.hotel.service.ReservationService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -13,6 +16,10 @@ import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/reservations")
+@Tag(
+        name = "Reservations",
+        description = "Reservation Management — demonstrates Log4j2 levels TRACE → FATAL"
+)
 public class ReservationController {
 
     private final ReservationService reservationService;
@@ -23,103 +30,141 @@ public class ReservationController {
         this.reservationService = reservationService;
     }
 
-    // Krijon një rezervim për një guest dhe një room
+    @Operation(
+            summary = "Create a reservation",
+            description = """
+                    Creates a reservation for an existing guest and room.
+                    Logs INFO on success, WARN for overlapping reservations
+                    and ERROR for invalid dates or missing entities.
+                    """
+    )
     @PostMapping("/guest/{guestId}/room/{roomId}")
     @PreAuthorize("hasAnyRole('ADMIN', 'RECEPTIONIST')")
-
-    public ResponseEntity<?> createReservation(
+    public ResponseEntity<Reservation> createReservation(
+            @Parameter(
+                    description = "ID of the guest",
+                    example = "1",
+                    required = true
+            )
             @PathVariable Long guestId,
+
+            @Parameter(
+                    description = "ID of the room",
+                    example = "1",
+                    required = true
+            )
             @PathVariable Long roomId,
+
             @Valid @RequestBody Reservation reservation
     ) {
-        try {
-            Reservation createdReservation =
-                    reservationService.createReservation(
-                            guestId,
-                            roomId,
-                            reservation
-                    );
+        Reservation createdReservation =
+                reservationService.createReservation(
+                        guestId,
+                        roomId,
+                        reservation
+                );
 
-            return ResponseEntity
-                    .status(HttpStatus.CREATED)
-                    .body(createdReservation);
-
-        } catch (IllegalArgumentException exception) {
-            return ResponseEntity
-                    .badRequest()
-                    .body(exception.getMessage());
-        }
+        return ResponseEntity
+                .status(HttpStatus.CREATED)
+                .body(createdReservation);
     }
 
-    // Kthen të gjitha rezervimet
+    @Operation(
+            summary = "Get all reservations",
+            description = "Returns all reservations and logs the result count"
+    )
     @GetMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'RECEPTIONIST')")
-
     public ResponseEntity<List<Reservation>> getAllReservations() {
-
-        List<Reservation> reservations =
-                reservationService.getAllReservations();
-
-        return ResponseEntity.ok(reservations);
+        return ResponseEntity.ok(
+                reservationService.getAllReservations()
+        );
     }
 
-    // Kthen rezervimin sipas ID-së
+    @Operation(
+            summary = "Get reservation by ID",
+            description = "Logs INFO when found and WARN when not found"
+    )
     @GetMapping("/{reservationId}")
     @PreAuthorize("hasAnyRole('ADMIN', 'RECEPTIONIST')")
-
     public ResponseEntity<Reservation> getReservationById(
+            @Parameter(
+                    description = "Unique ID of the reservation",
+                    example = "1",
+                    required = true
+            )
             @PathVariable Long reservationId
     ) {
-        Optional<Reservation> optionalReservation =
-                reservationService.getReservationById(reservationId);
+        Optional<Reservation> reservation =
+                reservationService
+                        .getReservationById(reservationId);
 
-        if (optionalReservation.isEmpty()) {
-            return ResponseEntity.notFound().build();
-        }
-
-        return ResponseEntity.ok(optionalReservation.get());
+        return reservation
+                .map(ResponseEntity::ok)
+                .orElseGet(() ->
+                        ResponseEntity.notFound().build()
+                );
     }
 
-    // Kthen rezervimet e një guest-i
+    @Operation(
+            summary = "Get reservations by guest",
+            description = "Returns all reservations belonging to a guest"
+    )
     @GetMapping("/guest/{guestId}")
     @PreAuthorize("hasAnyRole('ADMIN', 'RECEPTIONIST')")
-
     public ResponseEntity<List<Reservation>> getByGuestId(
+            @Parameter(
+                    description = "ID of the guest",
+                    example = "1",
+                    required = true
+            )
             @PathVariable Long guestId
     ) {
-        List<Reservation> reservations =
-                reservationService.getReservationsByGuestId(guestId);
-
-        return ResponseEntity.ok(reservations);
+        return ResponseEntity.ok(
+                reservationService
+                        .getReservationsByGuestId(guestId)
+        );
     }
 
-    // Kthen rezervimet e një dhome
-    @PreAuthorize("hasAnyRole('ADMIN', 'RECEPTIONIST')")
-
+    @Operation(
+            summary = "Get reservations by room",
+            description = "Returns all reservations associated with a room"
+    )
     @GetMapping("/room/{roomId}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'RECEPTIONIST')")
     public ResponseEntity<List<Reservation>> getByRoomId(
+            @Parameter(
+                    description = "ID of the room",
+                    example = "1",
+                    required = true
+            )
             @PathVariable Long roomId
     ) {
-        List<Reservation> reservations =
-                reservationService.getReservationsByRoomId(roomId);
-
-        return ResponseEntity.ok(reservations);
+        return ResponseEntity.ok(
+                reservationService
+                        .getReservationsByRoomId(roomId)
+        );
     }
 
-    // Përditëson një rezervim
+    @Operation(
+            summary = "Update a reservation",
+            description = """
+                    Updates reservation dates and information.
+                    Logs WARN for overlapping dates and ERROR for invalid data.
+                    """
+    )
     @PutMapping("/{reservationId}")
     @PreAuthorize("hasAnyRole('ADMIN', 'RECEPTIONIST')")
-
     public ResponseEntity<Reservation> updateReservation(
+            @Parameter(
+                    description = "ID of the reservation to update",
+                    example = "1",
+                    required = true
+            )
             @PathVariable Long reservationId,
+
             @Valid @RequestBody Reservation reservation
     ) {
-        if (reservationService
-                .getReservationById(reservationId)
-                .isEmpty()) {
-            return ResponseEntity.notFound().build();
-        }
-
         Reservation updatedReservation =
                 reservationService.updateReservation(
                         reservationId,
@@ -135,15 +180,26 @@ public class ReservationController {
         return ResponseEntity.ok(updatedReservation);
     }
 
-    // Anulon një rezervim
+    @Operation(
+            summary = "Cancel a reservation",
+            description = """
+                    Changes reservation status to CANCELLED.
+                    Logs INFO on success and WARN when not found.
+                    """
+    )
     @PatchMapping("/{reservationId}/cancel")
-    @PreAuthorize("hasAnyRole('isAuthenticated()')")
-
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<Reservation> cancelReservation(
+            @Parameter(
+                    description = "ID of the reservation to cancel",
+                    example = "1",
+                    required = true
+            )
             @PathVariable Long reservationId
     ) {
         Reservation cancelledReservation =
-                reservationService.cancelReservation(reservationId);
+                reservationService
+                        .cancelReservation(reservationId);
 
         if (cancelledReservation == null) {
             return ResponseEntity.notFound().build();
@@ -152,15 +208,23 @@ public class ReservationController {
         return ResponseEntity.ok(cancelledReservation);
     }
 
-    // Fshin një rezervim
-    @PreAuthorize("hasAnyRole('ADMIN')")
-
+    @Operation(
+            summary = "Delete a reservation",
+            description = "Logs INFO on success and ERROR when not found"
+    )
     @DeleteMapping("/{reservationId}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> deleteReservation(
+            @Parameter(
+                    description = "ID of the reservation to delete",
+                    example = "1",
+                    required = true
+            )
             @PathVariable Long reservationId
     ) {
         boolean deleted =
-                reservationService.deleteReservation(reservationId);
+                reservationService
+                        .deleteReservation(reservationId);
 
         if (!deleted) {
             return ResponseEntity.notFound().build();

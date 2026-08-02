@@ -2,6 +2,9 @@ package com.lhind.hotel.controller;
 
 import com.lhind.hotel.entity.GuestProfile;
 import com.lhind.hotel.service.GuestProfileService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -13,6 +16,10 @@ import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/guest-profiles")
+@Tag(
+        name = "Guest Profiles",
+        description = "Guest Profile Management — demonstrates Log4j2 levels TRACE → FATAL"
+)
 public class GuestProfileController {
 
     private final GuestProfileService guestProfileService;
@@ -23,13 +30,24 @@ public class GuestProfileController {
         this.guestProfileService = guestProfileService;
     }
 
-    // Krijon profil për një guest ekzistues
-
+    @Operation(
+            summary = "Create a guest profile",
+            description = """
+                    Creates a profile for an existing guest.
+                    Logs TRACE, DEBUG and INFO.
+                    Logs WARN when the guest does not exist.
+                    """
+    )
     @PostMapping("/guest/{guestId}")
-    @PreAuthorize("hasAnyRole('isAuthenticated()')")
-
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<GuestProfile> createGuestProfile(
+            @Parameter(
+                    description = "ID of the guest who owns the profile",
+                    example = "1",
+                    required = true
+            )
             @PathVariable Long guestId,
+
             @Valid @RequestBody GuestProfile guestProfile
     ) {
         GuestProfile createdProfile =
@@ -47,58 +65,94 @@ public class GuestProfileController {
                 .body(createdProfile);
     }
 
-    // Kthen të gjitha profilet
+    @Operation(
+            summary = "Get all guest profiles",
+            description = """
+                    Returns all guest profiles.
+                    Logs TRACE, DEBUG and INFO with the result count.
+                    """
+    )
     @GetMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'RECEPTIONIST')")
-
     public ResponseEntity<List<GuestProfile>> getAllGuestProfiles() {
-
-        List<GuestProfile> profiles =
-                guestProfileService.getAllGuestProfiles();
-
-        return ResponseEntity.ok(profiles);
+        return ResponseEntity.ok(
+                guestProfileService.getAllGuestProfiles()
+        );
     }
 
-    // Kthen profilin sipas ID-së së profilit
+    @Operation(
+            summary = "Get guest profile by ID",
+            description = """
+                    Returns a profile by its ID.
+                    Logs INFO when found and WARN when not found.
+                    """
+    )
     @GetMapping("/{profileId}")
     @PreAuthorize("hasAnyRole('ADMIN', 'RECEPTIONIST')")
-
     public ResponseEntity<GuestProfile> getGuestProfileById(
+            @Parameter(
+                    description = "Unique ID of the guest profile",
+                    example = "1",
+                    required = true
+            )
             @PathVariable Long profileId
     ) {
-        Optional<GuestProfile> optionalProfile =
+        Optional<GuestProfile> profile =
                 guestProfileService.getGuestProfileById(profileId);
 
-        if (optionalProfile.isEmpty()) {
-            return ResponseEntity.notFound().build();
-        }
-
-        return ResponseEntity.ok(optionalProfile.get());
+        return profile
+                .map(ResponseEntity::ok)
+                .orElseGet(() ->
+                        ResponseEntity.notFound().build()
+                );
     }
 
-    // Kthen profilin sipas ID-së së guest-it
+    @Operation(
+            summary = "Get profile by guest ID",
+            description = """
+                    Returns the profile associated with a guest.
+                    Logs INFO when found and WARN when no profile exists.
+                    """
+    )
     @GetMapping("/guest/{guestId}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'RECEPTIONIST')")
-
+    @PreAuthorize("hasAnyRole('ADMIN', 'RECEPTIONIST', 'GUEST')")
     public ResponseEntity<GuestProfile> getProfileByGuestId(
+            @Parameter(
+                    description = "ID of the guest",
+                    example = "1",
+                    required = true
+            )
             @PathVariable Long guestId
     ) {
-        Optional<GuestProfile> optionalProfile =
-                guestProfileService.getGuestProfileByGuestId(guestId);
+        Optional<GuestProfile> profile =
+                guestProfileService
+                        .getGuestProfileByGuestId(guestId);
 
-        if (optionalProfile.isEmpty()) {
-            return ResponseEntity.notFound().build();
-        }
-
-        return ResponseEntity.ok(optionalProfile.get());
+        return profile
+                .map(ResponseEntity::ok)
+                .orElseGet(() ->
+                        ResponseEntity.notFound().build()
+                );
     }
 
-    // Përditëson profilin
-    @PreAuthorize("hasAnyRole('ADMIN', 'RECEPTIONIST', 'GUEST')")
-
+    @Operation(
+            summary = "Update a guest profile",
+            description = """
+                    Updates an existing guest profile.
+                    Logs TRACE and DEBUG during validation,
+                    INFO on success and WARN when not found.
+                    """
+    )
     @PutMapping("/{profileId}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'RECEPTIONIST', 'GUEST')")
     public ResponseEntity<GuestProfile> updateGuestProfile(
+            @Parameter(
+                    description = "ID of the profile to update",
+                    example = "1",
+                    required = true
+            )
             @PathVariable Long profileId,
+
             @Valid @RequestBody GuestProfile guestProfile
     ) {
         GuestProfile updatedProfile =
@@ -114,11 +168,21 @@ public class GuestProfileController {
         return ResponseEntity.ok(updatedProfile);
     }
 
-    // Fshin profilin
+    @Operation(
+            summary = "Delete a guest profile",
+            description = """
+                    Deletes a guest profile.
+                    Logs INFO on success and ERROR when the profile does not exist.
+                    """
+    )
     @DeleteMapping("/{profileId}")
-    @PreAuthorize("hasAnyRole('ADMIN')")
-
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> deleteGuestProfile(
+            @Parameter(
+                    description = "ID of the profile to delete",
+                    example = "1",
+                    required = true
+            )
             @PathVariable Long profileId
     ) {
         boolean deleted =

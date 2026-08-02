@@ -7,28 +7,27 @@ import com.lhind.hotel.entity.Room;
 import com.lhind.hotel.repo.GuestRepo;
 import com.lhind.hotel.repo.ReservationRepo;
 import com.lhind.hotel.repo.RoomRepo;
-import com.lhind.hotel.service.ReservationService;
+import lombok.RequiredArgsConstructor;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Optional;
 
 @Service
-public class ReservationServiceImpl implements ReservationService {
+@RequiredArgsConstructor
+public class ReservationServiceImpl
+        implements ReservationService {
+
+    private static final Logger log =
+            LogManager.getLogger(
+                    ReservationServiceImpl.class
+            );
 
     private final ReservationRepo reservationRepo;
     private final GuestRepo guestRepo;
     private final RoomRepo roomRepo;
-
-    public ReservationServiceImpl(
-            ReservationRepo reservationRepo,
-            GuestRepo guestRepo,
-            RoomRepo roomRepo
-    ) {
-        this.reservationRepo = reservationRepo;
-        this.guestRepo = guestRepo;
-        this.roomRepo = roomRepo;
-    }
 
     @Override
     public Reservation createReservation(
@@ -36,22 +35,53 @@ public class ReservationServiceImpl implements ReservationService {
             Long roomId,
             Reservation reservation
     ) {
-        Guest guest = guestRepo.findById(guestId)
-                .orElseThrow(() ->
-                        new IllegalArgumentException(
-                                "Guest with ID " + guestId + " does not exist"
-                        )
-                );
+        log.trace(
+                "Entering createReservation() with guestId={}, roomId={}",
+                guestId,
+                roomId
+        );
 
-        Room room = roomRepo.findById(roomId)
-                .orElseThrow(() ->
-                        new IllegalArgumentException(
-                                "Room with ID " + roomId + " does not exist"
-                        )
-                );
+        log.debug(
+                "Validating guest and room existence"
+        );
+
+        Guest guest =
+                guestRepo.findById(guestId)
+                        .orElseThrow(() -> {
+                            log.error(
+                                    "Reservation creation failed because guestId={} does not exist",
+                                    guestId
+                            );
+
+                            return new IllegalArgumentException(
+                                    "Guest with ID "
+                                            + guestId
+                                            + " does not exist"
+                            );
+                        });
+
+        Room room =
+                roomRepo.findById(roomId)
+                        .orElseThrow(() -> {
+                            log.error(
+                                    "Reservation creation failed because roomId={} does not exist",
+                                    roomId
+                            );
+
+                            return new IllegalArgumentException(
+                                    "Room with ID "
+                                            + roomId
+                                            + " does not exist"
+                            );
+                        });
 
         if (reservation.getCheckInDate() == null
                 || reservation.getCheckOutDate() == null) {
+
+            log.error(
+                    "Reservation creation failed because dates are missing"
+            );
+
             throw new IllegalArgumentException(
                     "Check-in and check-out dates are required"
             );
@@ -59,19 +89,36 @@ public class ReservationServiceImpl implements ReservationService {
 
         if (!reservation.getCheckOutDate()
                 .isAfter(reservation.getCheckInDate())) {
+
+            log.error(
+                    "Reservation creation failed because check-out is not after check-in"
+            );
+
             throw new IllegalArgumentException(
                     "Check-out date must be after check-in date"
             );
         }
 
-        long overlappingReservations =
+        log.debug(
+                "Checking overlapping reservations for roomId={}",
+                roomId
+        );
+
+        long overlaps =
                 reservationRepo.countOverlappingReservations(
                         roomId,
                         reservation.getCheckInDate(),
                         reservation.getCheckOutDate()
                 );
 
-        if (overlappingReservations > 0) {
+        if (overlaps > 0) {
+            log.warn(
+                    "RoomId={} is already reserved between {} and {}",
+                    roomId,
+                    reservation.getCheckInDate(),
+                    reservation.getCheckOutDate()
+            );
+
             throw new IllegalArgumentException(
                     "Room is already reserved for the selected dates"
             );
@@ -81,31 +128,122 @@ public class ReservationServiceImpl implements ReservationService {
         reservation.setRoom(room);
 
         if (reservation.getStatus() == null) {
-            reservation.setStatus(ReservationStatus.CONFIRMED);
+            reservation.setStatus(
+                    ReservationStatus.CONFIRMED
+            );
         }
 
-        return reservationRepo.save(reservation);
-    }
+        Reservation savedReservation =
+                reservationRepo.save(reservation);
 
+        log.info(
+                "Reservation created successfully. id={}, guestId={}, roomId={}",
+                savedReservation.getId(),
+                guestId,
+                roomId
+        );
+
+        return savedReservation;
+    }
 
     @Override
     public List<Reservation> getAllReservations() {
-        return reservationRepo.findAll();
+
+        log.trace("Entering getAllReservations()");
+        log.debug("Retrieving all reservations");
+
+        List<Reservation> reservations =
+                reservationRepo.findAll();
+
+        log.info(
+                "Retrieved {} reservations",
+                reservations.size()
+        );
+
+        return reservations;
     }
 
     @Override
-    public Optional<Reservation> getReservationById(Long reservationId) {
-        return reservationRepo.findById(reservationId);
+    public Optional<Reservation> getReservationById(
+            Long reservationId
+    ) {
+        log.trace(
+                "Entering getReservationById() with id={}",
+                reservationId
+        );
+
+        Optional<Reservation> reservation =
+                reservationRepo.findById(reservationId);
+
+        if (reservation.isEmpty()) {
+            log.warn(
+                    "Reservation with id={} was not found",
+                    reservationId
+            );
+        } else {
+            log.info(
+                    "Reservation with id={} found successfully",
+                    reservationId
+            );
+        }
+
+        return reservation;
     }
 
     @Override
-    public List<Reservation> getReservationsByGuestId(Long guestId) {
-        return reservationRepo.findByGuestId(guestId);
+    public List<Reservation> getReservationsByGuestId(
+            Long guestId
+    ) {
+        log.trace(
+                "Entering getReservationsByGuestId() with guestId={}",
+                guestId
+        );
+
+        List<Reservation> reservations =
+                reservationRepo.findByGuestId(guestId);
+
+        if (reservations.isEmpty()) {
+            log.warn(
+                    "No reservations found for guestId={}",
+                    guestId
+            );
+        } else {
+            log.info(
+                    "Retrieved {} reservations for guestId={}",
+                    reservations.size(),
+                    guestId
+            );
+        }
+
+        return reservations;
     }
 
     @Override
-    public List<Reservation> getReservationsByRoomId(Long roomId) {
-        return reservationRepo.findByRoomId(roomId);
+    public List<Reservation> getReservationsByRoomId(
+            Long roomId
+    ) {
+        log.trace(
+                "Entering getReservationsByRoomId() with roomId={}",
+                roomId
+        );
+
+        List<Reservation> reservations =
+                reservationRepo.findByRoomId(roomId);
+
+        if (reservations.isEmpty()) {
+            log.warn(
+                    "No reservations found for roomId={}",
+                    roomId
+            );
+        } else {
+            log.info(
+                    "Retrieved {} reservations for roomId={}",
+                    reservations.size(),
+                    roomId
+            );
+        }
+
+        return reservations;
     }
 
     @Override
@@ -113,84 +251,171 @@ public class ReservationServiceImpl implements ReservationService {
             Long reservationId,
             Reservation reservation
     ) {
+        log.trace(
+                "Entering updateReservation() with id={}",
+                reservationId
+        );
+
         Optional<Reservation> optionalReservation =
                 reservationRepo.findById(reservationId);
 
         if (optionalReservation.isEmpty()) {
+            log.warn(
+                    "Reservation update failed because id={} was not found",
+                    reservationId
+            );
+
             return null;
         }
 
         if (reservation.getCheckInDate() == null
                 || reservation.getCheckOutDate() == null) {
+
+            log.error(
+                    "Reservation update failed because dates are missing. id={}",
+                    reservationId
+            );
+
             return null;
         }
 
         if (!reservation.getCheckOutDate()
                 .isAfter(reservation.getCheckInDate())) {
+
+            log.error(
+                    "Reservation update failed because dates are invalid. id={}",
+                    reservationId
+            );
+
             return null;
         }
 
-        Reservation existingReservation = optionalReservation.get();
+        Reservation existingReservation =
+                optionalReservation.get();
 
-        long overlappingReservations =
-                reservationRepo.countOverlappingReservationsExceptCurrent(
-                        existingReservation.getRoom().getId(),
-                        reservation.getCheckInDate(),
-                        reservation.getCheckOutDate(),
-                        reservationId
-                );
+        log.debug(
+                "Checking overlaps for reservationId={}",
+                reservationId
+        );
 
-        if (overlappingReservations > 0) {
+        long overlaps =
+                reservationRepo
+                        .countOverlappingReservationsExceptCurrent(
+                                existingReservation
+                                        .getRoom()
+                                        .getId(),
+                                reservation.getCheckInDate(),
+                                reservation.getCheckOutDate(),
+                                reservationId
+                        );
+
+        if (overlaps > 0) {
+            log.warn(
+                    "Reservation update rejected because dates overlap. id={}",
+                    reservationId
+            );
+
             return null;
         }
 
         existingReservation.setCheckInDate(
                 reservation.getCheckInDate()
         );
-
         existingReservation.setCheckOutDate(
                 reservation.getCheckOutDate()
         );
-
         existingReservation.setNumberOfGuests(
                 reservation.getNumberOfGuests()
         );
-
         existingReservation.setTotalPrice(
                 reservation.getTotalPrice()
         );
 
         if (reservation.getStatus() != null) {
-            existingReservation.setStatus(reservation.getStatus());
+            existingReservation.setStatus(
+                    reservation.getStatus()
+            );
         }
 
-        return reservationRepo.save(existingReservation);
+        Reservation updatedReservation =
+                reservationRepo.save(
+                        existingReservation
+                );
+
+        log.info(
+                "Reservation updated successfully. id={}",
+                reservationId
+        );
+
+        return updatedReservation;
     }
 
     @Override
-    public Reservation cancelReservation(Long reservationId) {
+    public Reservation cancelReservation(
+            Long reservationId
+    ) {
+        log.trace(
+                "Entering cancelReservation() with id={}",
+                reservationId
+        );
 
         Optional<Reservation> optionalReservation =
                 reservationRepo.findById(reservationId);
 
         if (optionalReservation.isEmpty()) {
+            log.warn(
+                    "Reservation cancellation failed because id={} was not found",
+                    reservationId
+            );
+
             return null;
         }
 
-        Reservation reservation = optionalReservation.get();
-        reservation.setStatus(ReservationStatus.CANCELLED);
+        Reservation reservation =
+                optionalReservation.get();
 
-        return reservationRepo.save(reservation);
+        reservation.setStatus(
+                ReservationStatus.CANCELLED
+        );
+
+        Reservation cancelledReservation =
+                reservationRepo.save(reservation);
+
+        log.info(
+                "Reservation cancelled successfully. id={}",
+                reservationId
+        );
+
+        return cancelledReservation;
     }
 
     @Override
-    public boolean deleteReservation(Long reservationId) {
+    public boolean deleteReservation(
+            Long reservationId
+    ) {
+        log.trace(
+                "Entering deleteReservation() with id={}",
+                reservationId
+        );
 
-        if (!reservationRepo.existsById(reservationId)) {
+        if (!reservationRepo.existsById(
+                reservationId
+        )) {
+            log.error(
+                    "Reservation deletion failed because id={} does not exist",
+                    reservationId
+            );
+
             return false;
         }
 
         reservationRepo.deleteById(reservationId);
+
+        log.info(
+                "Reservation deleted successfully. id={}",
+                reservationId
+        );
+
         return true;
     }
 }
