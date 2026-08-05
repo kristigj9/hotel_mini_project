@@ -1,32 +1,38 @@
 package com.lhind.hotel.service;
 
-import com.lhind.hotel.entity.Reservation;
+import com.lhind.hotel.dto.ReservationRequestDto;
+import com.lhind.hotel.dto.ReservationResponseDto;
 
 import java.util.List;
-import java.util.Optional;
 
 public interface ReservationService {
 
-    Reservation createReservation(
-            Long guestId,
-            Long roomId,
-            Reservation reservation
+    ReservationResponseDto createReservation(
+            ReservationRequestDto reservationDto
     );
 
-    List<Reservation> getAllReservations();
+    List<ReservationResponseDto> getAllReservations();
 
-    Optional<Reservation> getReservationById(Long reservationId);
+    ReservationResponseDto getReservationById(
+            Long reservationId
+    );
 
-    List<Reservation> getReservationsByGuestId(Long guestId);
+    List<ReservationResponseDto> getReservationsByGuestId(
+            Long guestId
+    );
 
-    List<Reservation> getReservationsByRoomId(Long roomId);
+    List<ReservationResponseDto> getReservationsByRoomId(
+            Long roomId
+    );
 
-    Reservation updateReservation(
+    ReservationResponseDto updateReservation(
             Long reservationId,
-            Reservation reservation
+            ReservationRequestDto reservationDto
     );
 
-    Reservation cancelReservation(Long reservationId);
+    ReservationResponseDto cancelReservation(
+            Long reservationId
+    );
 
-    boolean deleteReservation(Long reservationId);
+    void deleteReservation(Long reservationId);
 }

@@ -1,21 +1,23 @@
 package com.lhind.hotel.service;
 
-import com.lhind.hotel.entity.Guest;
+import com.lhind.hotel.dto.GuestDto;
 
 import java.util.List;
-import java.util.Optional;
 
 public interface GuestService {
 
-    Guest createGuest(Guest guest);
+    GuestDto createGuest(GuestDto guestDto);
 
-    List<Guest> getAllGuests();
+    List<GuestDto> getAllGuests();
 
-    Optional<Guest> getGuestById(Long guestId);
+    GuestDto getGuestById(Long guestId);
 
-    Optional<Guest> getGuestByEmail(String email);
+    GuestDto getGuestByEmail(String email);
 
-    Guest updateGuest(Long guestId, Guest guest);
+    GuestDto updateGuest(
+            Long guestId,
+            GuestDto guestDto
+    );
 
-    boolean deleteGuest(Long guestId);
+    void deleteGuest(Long guestId);
 }

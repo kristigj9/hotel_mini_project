@@ -1,26 +1,32 @@
 package com.lhind.hotel.service;
 
-import com.lhind.hotel.entity.Room;
+import com.lhind.hotel.dto.RoomDto;
+import com.lhind.hotel.dto.RoomStatusUpdateDto;
 import com.lhind.hotel.entity.RoomStatus;
 
 import java.util.List;
-import java.util.Optional;
 
 public interface RoomService {
 
-    Room createRoom(Long hotelId, Room room);
+    RoomDto createRoom(RoomDto roomDto);
 
-    List<Room> getAllRooms();
+    List<RoomDto> getAllRooms();
 
-    Optional<Room> getRoomById(Long roomId);
+    RoomDto getRoomById(Long roomId);
 
-    List<Room> getRoomsByHotelId(Long hotelId);
+    List<RoomDto> getRoomsByHotelId(Long hotelId);
 
-    List<Room> getRoomsByStatus(RoomStatus status);
+    List<RoomDto> getRoomsByStatus(RoomStatus status);
 
-    Room updateRoom(Long roomId, Room room);
+    RoomDto updateRoom(
+            Long roomId,
+            RoomDto roomDto
+    );
 
-    Room updateRoomStatus(Long roomId, RoomStatus status);
+    RoomDto updateRoomStatus(
+            Long roomId,
+            RoomStatusUpdateDto statusDto
+    );
 
-    boolean deleteRoom(Long roomId);
+    void deleteRoom(Long roomId);
 }

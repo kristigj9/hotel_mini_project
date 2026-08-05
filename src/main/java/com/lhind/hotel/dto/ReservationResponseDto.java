@@ -1,7 +1,6 @@
 package com.lhind.hotel.dto;
 
 import com.lhind.hotel.entity.ReservationStatus;
-import com.lhind.hotel.entity.Reservation;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -25,7 +24,7 @@ public class ReservationResponseDto {
 
     private BigDecimal totalPrice;
 
-    private Reservation status;
+    private ReservationStatus status;
 
     private LocalDateTime createdAt;
 

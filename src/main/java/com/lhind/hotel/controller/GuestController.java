@@ -1,54 +1,42 @@
 package com.lhind.hotel.controller;
 
-import com.lhind.hotel.entity.Guest;
+import com.lhind.hotel.dto.GuestDto;
 import com.lhind.hotel.service.GuestService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/guests")
+@RequiredArgsConstructor
 @Tag(
         name = "Guests",
-        description = "Guest Management — demonstrates Log4j2 levels TRACE → FATAL"
+        description = "Endpoints for managing hotel guests"
 )
 public class GuestController {
 
     private final GuestService guestService;
 
-    public GuestController(GuestService guestService) {
-        this.guestService = guestService;
-    }
-
     @Operation(
             summary = "Create a guest",
-            description = """
-                    Creates a new guest.
-                    Logs TRACE, DEBUG and INFO.
-                    Logs ERROR when another guest has the same email.
-                    """
+            description = "Creates a new guest."
     )
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'RECEPTIONIST', 'GUEST')")
-    public ResponseEntity<Guest> createGuest(
-            @Valid @RequestBody Guest guest
+    public ResponseEntity<GuestDto> createGuest(
+            @Valid @RequestBody GuestDto guestDto
     ) {
-        Guest createdGuest =
-                guestService.createGuest(guest);
 
-        if (createdGuest == null) {
-            return ResponseEntity
-                    .status(HttpStatus.CONFLICT)
-                    .build();
-        }
+        GuestDto createdGuest =
+                guestService.createGuest(guestDto);
 
         return ResponseEntity
                 .status(HttpStatus.CREATED)
@@ -57,15 +45,12 @@ public class GuestController {
 
     @Operation(
             summary = "Get all guests",
-            description = """
-                    Returns all guests.
-                    Logs TRACE on entry, DEBUG while reading the database
-                    and INFO with the number of returned guests.
-                    """
+            description = "Returns all registered guests."
     )
     @GetMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'RECEPTIONIST')")
-    public ResponseEntity<List<Guest>> getAllGuests() {
+    public ResponseEntity<List<GuestDto>> getAllGuests() {
+
         return ResponseEntity.ok(
                 guestService.getAllGuests()
         );
@@ -73,14 +58,11 @@ public class GuestController {
 
     @Operation(
             summary = "Get guest by ID",
-            description = """
-                    Searches for a guest by ID.
-                    Logs INFO when found and WARN when not found.
-                    """
+            description = "Returns a guest using the guest ID."
     )
     @GetMapping("/{guestId}")
     @PreAuthorize("hasAnyRole('ADMIN', 'RECEPTIONIST')")
-    public ResponseEntity<Guest> getGuestById(
+    public ResponseEntity<GuestDto> getGuestById(
             @Parameter(
                     description = "Unique ID of the guest",
                     example = "1",
@@ -88,27 +70,20 @@ public class GuestController {
             )
             @PathVariable Long guestId
     ) {
-        Optional<Guest> guest =
+
+        GuestDto guest =
                 guestService.getGuestById(guestId);
 
-        return guest
-                .map(ResponseEntity::ok)
-                .orElseGet(() ->
-                        ResponseEntity.notFound().build()
-                );
+        return ResponseEntity.ok(guest);
     }
 
     @Operation(
             summary = "Search guest by email",
-            description = """
-                    Searches for a guest by email.
-                    Logs DEBUG during lookup, INFO when found
-                    and WARN when the guest does not exist.
-                    """
+            description = "Returns a guest using the email address."
     )
     @GetMapping("/email")
     @PreAuthorize("hasAnyRole('ADMIN', 'RECEPTIONIST')")
-    public ResponseEntity<Guest> getGuestByEmail(
+    public ResponseEntity<GuestDto> getGuestByEmail(
             @Parameter(
                     description = "Email of the guest",
                     example = "guest@hotel.com",
@@ -116,28 +91,20 @@ public class GuestController {
             )
             @RequestParam String email
     ) {
-        Optional<Guest> guest =
+
+        GuestDto guest =
                 guestService.getGuestByEmail(email);
 
-        return guest
-                .map(ResponseEntity::ok)
-                .orElseGet(() ->
-                        ResponseEntity.notFound().build()
-                );
+        return ResponseEntity.ok(guest);
     }
 
     @Operation(
             summary = "Update a guest",
-            description = """
-                    Updates an existing guest.
-                    Logs TRACE and DEBUG during validation,
-                    INFO on success, WARN when not found
-                    and ERROR when the email is already used.
-                    """
+            description = "Updates the information of an existing guest."
     )
     @PutMapping("/{guestId}")
     @PreAuthorize("hasAnyRole('ADMIN', 'RECEPTIONIST', 'GUEST')")
-    public ResponseEntity<Guest> updateGuest(
+    public ResponseEntity<GuestDto> updateGuest(
             @Parameter(
                     description = "ID of the guest to update",
                     example = "1",
@@ -145,31 +112,21 @@ public class GuestController {
             )
             @PathVariable Long guestId,
 
-            @Valid @RequestBody Guest guest
+            @Valid @RequestBody GuestDto guestDto
     ) {
-        if (guestService.getGuestById(guestId).isEmpty()) {
-            return ResponseEntity.notFound().build();
-        }
 
-        Guest updatedGuest =
-                guestService.updateGuest(guestId, guest);
-
-        if (updatedGuest == null) {
-            return ResponseEntity
-                    .status(HttpStatus.CONFLICT)
-                    .build();
-        }
+        GuestDto updatedGuest =
+                guestService.updateGuest(
+                        guestId,
+                        guestDto
+                );
 
         return ResponseEntity.ok(updatedGuest);
     }
 
     @Operation(
             summary = "Delete a guest",
-            description = """
-                    Deletes an existing guest.
-                    Logs TRACE and DEBUG during deletion,
-                    INFO on success and ERROR when not found.
-                    """
+            description = "Deletes an existing guest."
     )
     @DeleteMapping("/{guestId}")
     @PreAuthorize("hasRole('ADMIN')")
@@ -181,12 +138,8 @@ public class GuestController {
             )
             @PathVariable Long guestId
     ) {
-        boolean deleted =
-                guestService.deleteGuest(guestId);
 
-        if (!deleted) {
-            return ResponseEntity.notFound().build();
-        }
+        guestService.deleteGuest(guestId);
 
         return ResponseEntity.noContent().build();
     }

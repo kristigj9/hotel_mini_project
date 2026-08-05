@@ -1,25 +1,27 @@
 package com.lhind.hotel.service;
 
-import com.lhind.hotel.entity.Hotel;
+import com.lhind.hotel.dto.HotelDto;
 
 import java.util.List;
-import java.util.Optional;
 
 public interface HotelService {
 
-    Hotel createHotel(Hotel hotel);
+    HotelDto createHotel(HotelDto hotelDto);
 
-    List<Hotel> getAllHotels();
+    List<HotelDto> getAllHotels();
 
-    Optional<Hotel> getHotelById(Long hotelId);
+    HotelDto getHotelById(Long hotelId);
 
-    List<Hotel> getHotelsByCity(String city);
+    List<HotelDto> getHotelsByCity(String city);
 
-    List<Hotel> getHotelsByName(String name);
+    List<HotelDto> getHotelsByName(String name);
 
-    Hotel updateHotel(Long hotelId, Hotel hotel);
+    HotelDto updateHotel(
+            Long hotelId,
+            HotelDto hotelDto
+    );
 
-    boolean deleteHotel(
+    void deleteHotel(
             Long hotelId,
             boolean dbAvailable
     );

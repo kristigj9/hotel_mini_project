@@ -1,67 +1,48 @@
 package com.lhind.hotel.controller;
 
-import com.lhind.hotel.entity.Reservation;
+import com.lhind.hotel.dto.ReservationRequestDto;
+import com.lhind.hotel.dto.ReservationResponseDto;
 import com.lhind.hotel.service.ReservationService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/reservations")
+@RequiredArgsConstructor
 @Tag(
         name = "Reservations",
-        description = "Reservation Management — demonstrates Log4j2 levels TRACE → FATAL"
+        description = "Endpoints for managing hotel reservations"
 )
 public class ReservationController {
 
     private final ReservationService reservationService;
 
-    public ReservationController(
-            ReservationService reservationService
-    ) {
-        this.reservationService = reservationService;
-    }
-
     @Operation(
             summary = "Create a reservation",
             description = """
-                    Creates a reservation for an existing guest and room.
-                    Logs INFO on success, WARN for overlapping reservations
-                    and ERROR for invalid dates or missing entities.
+                    Creates a reservation.
+                    Guest ID and room ID must be supplied in the request body.
                     """
     )
-    @PostMapping("/guest/{guestId}/room/{roomId}")
+    @PostMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'RECEPTIONIST')")
-    public ResponseEntity<Reservation> createReservation(
-            @Parameter(
-                    description = "ID of the guest",
-                    example = "1",
-                    required = true
-            )
-            @PathVariable Long guestId,
-
-            @Parameter(
-                    description = "ID of the room",
-                    example = "1",
-                    required = true
-            )
-            @PathVariable Long roomId,
-
-            @Valid @RequestBody Reservation reservation
+    public ResponseEntity<ReservationResponseDto> createReservation(
+            @Valid @RequestBody
+            ReservationRequestDto reservationDto
     ) {
-        Reservation createdReservation =
+
+        ReservationResponseDto createdReservation =
                 reservationService.createReservation(
-                        guestId,
-                        roomId,
-                        reservation
+                        reservationDto
                 );
 
         return ResponseEntity
@@ -71,11 +52,13 @@ public class ReservationController {
 
     @Operation(
             summary = "Get all reservations",
-            description = "Returns all reservations and logs the result count"
+            description = "Returns all reservations."
     )
     @GetMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'RECEPTIONIST')")
-    public ResponseEntity<List<Reservation>> getAllReservations() {
+    public ResponseEntity<List<ReservationResponseDto>>
+    getAllReservations() {
+
         return ResponseEntity.ok(
                 reservationService.getAllReservations()
         );
@@ -83,11 +66,12 @@ public class ReservationController {
 
     @Operation(
             summary = "Get reservation by ID",
-            description = "Logs INFO when found and WARN when not found"
+            description = "Returns a reservation using its ID."
     )
     @GetMapping("/{reservationId}")
     @PreAuthorize("hasAnyRole('ADMIN', 'RECEPTIONIST')")
-    public ResponseEntity<Reservation> getReservationById(
+    public ResponseEntity<ReservationResponseDto>
+    getReservationById(
             @Parameter(
                     description = "Unique ID of the reservation",
                     example = "1",
@@ -95,24 +79,22 @@ public class ReservationController {
             )
             @PathVariable Long reservationId
     ) {
-        Optional<Reservation> reservation =
+
+        ReservationResponseDto reservation =
                 reservationService
                         .getReservationById(reservationId);
 
-        return reservation
-                .map(ResponseEntity::ok)
-                .orElseGet(() ->
-                        ResponseEntity.notFound().build()
-                );
+        return ResponseEntity.ok(reservation);
     }
 
     @Operation(
             summary = "Get reservations by guest",
-            description = "Returns all reservations belonging to a guest"
+            description = "Returns all reservations belonging to a guest."
     )
     @GetMapping("/guest/{guestId}")
     @PreAuthorize("hasAnyRole('ADMIN', 'RECEPTIONIST')")
-    public ResponseEntity<List<Reservation>> getByGuestId(
+    public ResponseEntity<List<ReservationResponseDto>>
+    getByGuestId(
             @Parameter(
                     description = "ID of the guest",
                     example = "1",
@@ -120,6 +102,7 @@ public class ReservationController {
             )
             @PathVariable Long guestId
     ) {
+
         return ResponseEntity.ok(
                 reservationService
                         .getReservationsByGuestId(guestId)
@@ -128,11 +111,12 @@ public class ReservationController {
 
     @Operation(
             summary = "Get reservations by room",
-            description = "Returns all reservations associated with a room"
+            description = "Returns all reservations associated with a room."
     )
     @GetMapping("/room/{roomId}")
     @PreAuthorize("hasAnyRole('ADMIN', 'RECEPTIONIST')")
-    public ResponseEntity<List<Reservation>> getByRoomId(
+    public ResponseEntity<List<ReservationResponseDto>>
+    getByRoomId(
             @Parameter(
                     description = "ID of the room",
                     example = "1",
@@ -140,6 +124,7 @@ public class ReservationController {
             )
             @PathVariable Long roomId
     ) {
+
         return ResponseEntity.ok(
                 reservationService
                         .getReservationsByRoomId(roomId)
@@ -148,14 +133,12 @@ public class ReservationController {
 
     @Operation(
             summary = "Update a reservation",
-            description = """
-                    Updates reservation dates and information.
-                    Logs WARN for overlapping dates and ERROR for invalid data.
-                    """
+            description = "Updates reservation dates, guest, room and number of guests."
     )
     @PutMapping("/{reservationId}")
     @PreAuthorize("hasAnyRole('ADMIN', 'RECEPTIONIST')")
-    public ResponseEntity<Reservation> updateReservation(
+    public ResponseEntity<ReservationResponseDto>
+    updateReservation(
             @Parameter(
                     description = "ID of the reservation to update",
                     example = "1",
@@ -163,33 +146,27 @@ public class ReservationController {
             )
             @PathVariable Long reservationId,
 
-            @Valid @RequestBody Reservation reservation
+            @Valid @RequestBody
+            ReservationRequestDto reservationDto
     ) {
-        Reservation updatedReservation =
+
+        ReservationResponseDto updatedReservation =
                 reservationService.updateReservation(
                         reservationId,
-                        reservation
+                        reservationDto
                 );
-
-        if (updatedReservation == null) {
-            return ResponseEntity
-                    .status(HttpStatus.BAD_REQUEST)
-                    .build();
-        }
 
         return ResponseEntity.ok(updatedReservation);
     }
 
     @Operation(
             summary = "Cancel a reservation",
-            description = """
-                    Changes reservation status to CANCELLED.
-                    Logs INFO on success and WARN when not found.
-                    """
+            description = "Changes the reservation status to CANCELLED."
     )
     @PatchMapping("/{reservationId}/cancel")
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<Reservation> cancelReservation(
+    public ResponseEntity<ReservationResponseDto>
+    cancelReservation(
             @Parameter(
                     description = "ID of the reservation to cancel",
                     example = "1",
@@ -197,20 +174,17 @@ public class ReservationController {
             )
             @PathVariable Long reservationId
     ) {
-        Reservation cancelledReservation =
+
+        ReservationResponseDto cancelledReservation =
                 reservationService
                         .cancelReservation(reservationId);
-
-        if (cancelledReservation == null) {
-            return ResponseEntity.notFound().build();
-        }
 
         return ResponseEntity.ok(cancelledReservation);
     }
 
     @Operation(
             summary = "Delete a reservation",
-            description = "Logs INFO on success and ERROR when not found"
+            description = "Deletes an existing reservation."
     )
     @DeleteMapping("/{reservationId}")
     @PreAuthorize("hasRole('ADMIN')")
@@ -222,13 +196,10 @@ public class ReservationController {
             )
             @PathVariable Long reservationId
     ) {
-        boolean deleted =
-                reservationService
-                        .deleteReservation(reservationId);
 
-        if (!deleted) {
-            return ResponseEntity.notFound().build();
-        }
+        reservationService.deleteReservation(
+                reservationId
+        );
 
         return ResponseEntity.noContent().build();
     }

@@ -1,78 +1,45 @@
 package com.lhind.hotel.service;
 
+import com.lhind.hotel.dto.HotelDto;
 import com.lhind.hotel.entity.Hotel;
-import com.lhind.hotel.entity.Room;
+import com.lhind.hotel.exception.ResourceNotFoundException;
+import com.lhind.hotel.mapper.HotelMapper;
 import com.lhind.hotel.repo.HotelRepo;
+import com.lhind.hotel.service.HotelService;
 import lombok.RequiredArgsConstructor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
+@Transactional
 public class HotelServiceImpl implements HotelService {
 
     private static final Logger log =
             LogManager.getLogger(HotelServiceImpl.class);
 
-    private final HotelRepo hotelRepo;
+    private final HotelRepo hotelRepository;
+    private final HotelMapper hotelMapper;
 
     @Override
-    public Hotel createHotel(Hotel hotel) {
-
-        log.trace(
-                "Entering createHotel() with name={}",
-                hotel.getName()
-        );
+    public HotelDto createHotel(HotelDto hotelDto) {
 
         log.debug(
-                "Validating hotel data. name={}, city={}, stars={}",
-                hotel.getName(),
-                hotel.getCity(),
-                hotel.getStarRating()
+                "Creating hotel with name={} and city={}",
+                hotelDto.getName(),
+                hotelDto.getCity()
         );
 
-        if (hotel.getName() == null
-                || hotel.getName().isBlank()) {
+        Hotel hotel = hotelMapper.toEntity(hotelDto);
 
-            log.error(
-                    "Hotel creation failed because name is missing"
-            );
-
-            throw new IllegalArgumentException(
-                    "Hotel name is required"
-            );
-        }
-
-        if (hotel.getCity() == null
-                || hotel.getCity().isBlank()) {
-
-            log.error(
-                    "Hotel creation failed because city is missing"
-            );
-
-            throw new IllegalArgumentException(
-                    "Hotel city is required"
-            );
-        }
-
-        if (hotel.getRooms() != null) {
-            for (Room room : hotel.getRooms()) {
-                room.setHotel(hotel);
-            }
-
-            log.debug(
-                    "Associated {} rooms with hotel={}",
-                    hotel.getRooms().size(),
-                    hotel.getName()
-            );
-        }
+        hotel.setId(null);
 
         Hotel savedHotel =
-                hotelRepo.save(hotel);
+                hotelRepository.save(hotel);
 
         log.info(
                 "Hotel created successfully. id={}, name={}",
@@ -80,227 +47,115 @@ public class HotelServiceImpl implements HotelService {
                 savedHotel.getName()
         );
 
-        return savedHotel;
+        return hotelMapper.toDto(savedHotel);
     }
 
     @Override
-    public List<Hotel> getAllHotels() {
+    @Transactional(readOnly = true)
+    public List<HotelDto> getAllHotels() {
 
-        log.trace("Entering getAllHotels()");
-        log.debug("Retrieving all hotels");
-
-        List<Hotel> hotels =
-                hotelRepo.findAll();
-
-        log.info(
-                "Retrieved {} hotels",
-                hotels.size()
-        );
-
-        return hotels;
+        return hotelRepository.findAll()
+                .stream()
+                .map(hotelMapper::toDto)
+                .toList();
     }
 
     @Override
-    public Optional<Hotel> getHotelById(Long hotelId) {
+    @Transactional(readOnly = true)
+    public HotelDto getHotelById(Long hotelId) {
 
-        log.trace(
-                "Entering getHotelById() with id={}",
-                hotelId
-        );
+        Hotel hotel = findHotelById(hotelId);
 
-        log.debug(
-                "Searching hotel with id={}",
-                hotelId
-        );
-
-        Optional<Hotel> hotel =
-                hotelRepo.findById(hotelId);
-
-        if (hotel.isEmpty()) {
-            log.warn(
-                    "Hotel with id={} was not found",
-                    hotelId
-            );
-        } else {
-            log.info(
-                    "Hotel with id={} found successfully",
-                    hotelId
-            );
-        }
-
-        return hotel;
+        return hotelMapper.toDto(hotel);
     }
 
     @Override
-    public List<Hotel> getHotelsByCity(String city) {
+    @Transactional(readOnly = true)
+    public List<HotelDto> getHotelsByCity(String city) {
 
-        log.trace(
-                "Entering getHotelsByCity() with city={}",
-                city
-        );
-
-        log.debug(
-                "Searching hotels by city={}",
-                city
-        );
-
-        List<Hotel> hotels =
-                hotelRepo.findByCityIgnoreCase(city);
-
-        if (hotels.isEmpty()) {
-            log.warn(
-                    "No hotels found in city={}",
-                    city
-            );
-        } else {
-            log.info(
-                    "Found {} hotels in city={}",
-                    hotels.size(),
-                    city
-            );
-        }
-
-        return hotels;
+        return hotelRepository
+                .findByNameContainingIgnoreCase(city)
+                .stream()
+                .map(hotelMapper::toDto)
+                .toList();
     }
 
     @Override
-    public List<Hotel> getHotelsByName(String name) {
+    @Transactional(readOnly = true)
+    public List<HotelDto> getHotelsByName(String name) {
 
-        log.trace(
-                "Entering getHotelsByName() with name={}",
-                name
-        );
-
-        log.debug(
-                "Searching hotels containing name={}",
-                name
-        );
-
-        List<Hotel> hotels =
-                hotelRepo.findByNameContainingIgnoreCase(
-                        name
-                );
-
-        if (hotels.isEmpty()) {
-            log.warn(
-                    "No hotels matched name={}",
-                    name
-            );
-        } else {
-            log.info(
-                    "Found {} hotels matching name={}",
-                    hotels.size(),
-                    name
-            );
-        }
-
-        return hotels;
+        return hotelRepository
+                .findByNameContainingIgnoreCase(name)
+                .stream()
+                .map(hotelMapper::toDto)
+                .toList();
     }
 
     @Override
-    public Hotel updateHotel(
+    public HotelDto updateHotel(
             Long hotelId,
-            Hotel hotel
+            HotelDto hotelDto
     ) {
-        log.trace(
-                "Entering updateHotel() with id={}",
-                hotelId
-        );
-
-        log.debug(
-                "Validating hotel update for id={}",
-                hotelId
-        );
-
-        Optional<Hotel> optionalHotel =
-                hotelRepo.findById(hotelId);
-
-        if (optionalHotel.isEmpty()) {
-            log.warn(
-                    "Hotel update failed because id={} was not found",
-                    hotelId
-            );
-
-            return null;
-        }
-
-        if (hotel.getName() == null
-                || hotel.getName().isBlank()) {
-
-            log.error(
-                    "Hotel update failed because name is missing. id={}",
-                    hotelId
-            );
-
-            throw new IllegalArgumentException(
-                    "Hotel name is required"
-            );
-        }
 
         Hotel existingHotel =
-                optionalHotel.get();
+                findHotelById(hotelId);
 
-        existingHotel.setName(hotel.getName());
-        existingHotel.setCity(hotel.getCity());
-        existingHotel.setAddress(hotel.getAddress());
-        existingHotel.setStarRating(
-                hotel.getStarRating()
+        hotelMapper.updateEntity(
+                existingHotel,
+                hotelDto
         );
 
         Hotel updatedHotel =
-                hotelRepo.save(existingHotel);
+                hotelRepository.save(existingHotel);
 
         log.info(
                 "Hotel updated successfully. id={}",
-                hotelId
+                updatedHotel.getId()
         );
 
-        return updatedHotel;
+        return hotelMapper.toDto(updatedHotel);
     }
 
     @Override
-    public boolean deleteHotel(
+    public void deleteHotel(
             Long hotelId,
             boolean dbAvailable
     ) {
-        log.trace(
-                "Entering deleteHotel() with id={}, dbAvailable={}",
-                hotelId,
-                dbAvailable
-        );
 
         log.debug(
-                "Preparing deletion for hotel id={}",
+                "Deleting hotel with id={}",
                 hotelId
         );
 
         if (!dbAvailable) {
-            log.fatal(
-                    "Hotel deletion failed because database is unavailable. id={}",
+            log.error(
+                    "Database is unavailable while deleting hotel id={}",
                     hotelId
             );
 
             throw new IllegalStateException(
-                    "Database is unavailable"
+                    "Database is currently unavailable"
             );
         }
 
-        if (!hotelRepo.existsById(hotelId)) {
-            log.error(
-                    "Hotel deletion failed because id={} does not exist",
-                    hotelId
-            );
+        Hotel hotel = findHotelById(hotelId);
 
-            return false;
-        }
-
-        hotelRepo.deleteById(hotelId);
+        hotelRepository.delete(hotel);
 
         log.info(
                 "Hotel deleted successfully. id={}",
                 hotelId
         );
+    }
 
-        return true;
+    private Hotel findHotelById(Long hotelId) {
+
+        return hotelRepository.findById(hotelId)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException(
+                                "Hotel not found with id: " +
+                                        hotelId
+                        )
+                );
     }
 }

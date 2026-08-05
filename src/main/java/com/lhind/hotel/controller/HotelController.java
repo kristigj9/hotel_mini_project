@@ -1,48 +1,42 @@
 package com.lhind.hotel.controller;
 
-import com.lhind.hotel.entity.Hotel;
+import com.lhind.hotel.dto.HotelDto;
 import com.lhind.hotel.service.HotelService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/hotels")
+@RequiredArgsConstructor
 @Tag(
         name = "Hotels",
-        description = "Hotel Management — demonstrates Log4j2 levels TRACE → FATAL"
+        description = "Endpoints for managing hotels"
 )
 public class HotelController {
 
     private final HotelService hotelService;
 
-    public HotelController(HotelService hotelService) {
-        this.hotelService = hotelService;
-    }
-
     @Operation(
             summary = "Create a hotel",
-            description = """
-                    Creates a new hotel.
-                    Logs TRACE, DEBUG and INFO.
-                    Logs ERROR when hotel data is invalid.
-                    """
+            description = "Creates a new hotel."
     )
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<Hotel> createHotel(
-            @Valid @RequestBody Hotel hotel
+    public ResponseEntity<HotelDto> createHotel(
+            @Valid @RequestBody HotelDto hotelDto
     ) {
-        Hotel createdHotel =
-                hotelService.createHotel(hotel);
+
+        HotelDto createdHotel =
+                hotelService.createHotel(hotelDto);
 
         return ResponseEntity
                 .status(HttpStatus.CREATED)
@@ -51,14 +45,12 @@ public class HotelController {
 
     @Operation(
             summary = "Get all hotels",
-            description = """
-                    Returns all hotels.
-                    Logs TRACE, DEBUG and INFO with the result count.
-                    """
+            description = "Returns all hotels."
     )
     @GetMapping
-    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<List<Hotel>> getAllHotels() {
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<List<HotelDto>> getAllHotels() {
+
         return ResponseEntity.ok(
                 hotelService.getAllHotels()
         );
@@ -66,14 +58,11 @@ public class HotelController {
 
     @Operation(
             summary = "Get hotel by ID",
-            description = """
-                    Returns a hotel by ID.
-                    Logs INFO when found and WARN when not found.
-                    """
+            description = "Returns a hotel using its ID."
     )
     @GetMapping("/{hotelId}")
-    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<Hotel> getHotelById(
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<HotelDto> getHotelById(
             @Parameter(
                     description = "Unique ID of the hotel",
                     example = "1",
@@ -81,26 +70,20 @@ public class HotelController {
             )
             @PathVariable Long hotelId
     ) {
-        Optional<Hotel> hotel =
+
+        HotelDto hotel =
                 hotelService.getHotelById(hotelId);
 
-        return hotel
-                .map(ResponseEntity::ok)
-                .orElseGet(() ->
-                        ResponseEntity.notFound().build()
-                );
+        return ResponseEntity.ok(hotel);
     }
 
     @Operation(
             summary = "Search hotels by city",
-            description = """
-                    Returns hotels in the specified city.
-                    Logs INFO when results exist and WARN when no hotel is found.
-                    """
+            description = "Returns hotels whose city matches the search value."
     )
     @GetMapping("/city")
-    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<List<Hotel>> getHotelsByCity(
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<List<HotelDto>> getHotelsByCity(
             @Parameter(
                     description = "City where hotels will be searched",
                     example = "Tirana",
@@ -108,6 +91,7 @@ public class HotelController {
             )
             @RequestParam String city
     ) {
+
         return ResponseEntity.ok(
                 hotelService.getHotelsByCity(city)
         );
@@ -115,14 +99,11 @@ public class HotelController {
 
     @Operation(
             summary = "Search hotels by name",
-            description = """
-                    Searches hotels using a full or partial name.
-                    Logs INFO when matches exist and WARN when no result is found.
-                    """
+            description = "Returns hotels matching a full or partial name."
     )
     @GetMapping("/name")
-    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<List<Hotel>> getHotelsByName(
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<List<HotelDto>> getHotelsByName(
             @Parameter(
                     description = "Full or partial hotel name",
                     example = "Plaza",
@@ -130,6 +111,7 @@ public class HotelController {
             )
             @RequestParam String name
     ) {
+
         return ResponseEntity.ok(
                 hotelService.getHotelsByName(name)
         );
@@ -137,15 +119,11 @@ public class HotelController {
 
     @Operation(
             summary = "Update a hotel",
-            description = """
-                    Updates an existing hotel.
-                    Logs INFO on success, WARN when not found
-                    and ERROR for invalid data.
-                    """
+            description = "Updates an existing hotel."
     )
     @PutMapping("/{hotelId}")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<Hotel> updateHotel(
+    public ResponseEntity<HotelDto> updateHotel(
             @Parameter(
                     description = "ID of the hotel to update",
                     example = "1",
@@ -153,14 +131,14 @@ public class HotelController {
             )
             @PathVariable Long hotelId,
 
-            @Valid @RequestBody Hotel hotel
+            @Valid @RequestBody HotelDto hotelDto
     ) {
-        Hotel updatedHotel =
-                hotelService.updateHotel(hotelId, hotel);
 
-        if (updatedHotel == null) {
-            return ResponseEntity.notFound().build();
-        }
+        HotelDto updatedHotel =
+                hotelService.updateHotel(
+                        hotelId,
+                        hotelDto
+                );
 
         return ResponseEntity.ok(updatedHotel);
     }
@@ -168,9 +146,9 @@ public class HotelController {
     @Operation(
             summary = "Delete a hotel",
             description = """
-                    Deletes a hotel.
-                    Logs INFO on success, ERROR when not found
-                    and FATAL when database availability is false.
+                    Deletes an existing hotel.
+                    The dbAvailable parameter can be used to simulate
+                    database unavailability for the logging exercise.
                     """
     )
     @DeleteMapping("/{hotelId}")
@@ -190,15 +168,11 @@ public class HotelController {
             @RequestParam(defaultValue = "true")
             boolean dbAvailable
     ) {
-        boolean deleted =
-                hotelService.deleteHotel(
-                        hotelId,
-                        dbAvailable
-                );
 
-        if (!deleted) {
-            return ResponseEntity.notFound().build();
-        }
+        hotelService.deleteHotel(
+                hotelId,
+                dbAvailable
+        );
 
         return ResponseEntity.noContent().build();
     }

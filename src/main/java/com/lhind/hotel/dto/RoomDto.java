@@ -1,6 +1,5 @@
 package com.lhind.hotel.dto;
 
-
 import com.lhind.hotel.entity.RoomStatus;
 import com.lhind.hotel.entity.RoomType;
 import jakarta.validation.constraints.NotBlank;
@@ -28,10 +27,14 @@ public class RoomDto {
     @NotNull(message = "Room capacity is required")
     @Positive(message = "Room capacity must be greater than zero")
     private Integer capacity;
+
     @NotNull(message = "Price per night is required")
     @Positive(message = "Price per night must be greater than zero")
     private BigDecimal pricePerNight;
+
     @NotNull(message = "Room status is required")
     private RoomStatus status;
+
+    @NotNull(message = "Hotel ID is required")
     private Long hotelId;
 }

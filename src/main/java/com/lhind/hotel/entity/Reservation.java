@@ -5,6 +5,7 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
@@ -16,10 +17,10 @@ public class Reservation {
     private Long id;
 
     @Column(name = "check_in_date", nullable = false)
-    private LocalDateTime checkInDate;
+    private LocalDate checkInDate;
 
     @Column(name = "check_out_date", nullable = false)
-    private LocalDateTime checkOutDate;
+    private LocalDate checkOutDate;
 
     @Positive
     @Column(name = "number_of_guests", nullable = false)
@@ -50,8 +51,8 @@ public class Reservation {
     }
 
     public Reservation(
-            LocalDateTime checkInDate,
-            LocalDateTime checkOutDate,
+            LocalDate checkInDate,
+            LocalDate checkOutDate,
             Integer numberOfGuests,
             BigDecimal totalPrice,
             ReservationStatus status,
@@ -77,19 +78,19 @@ public class Reservation {
         this.id = id;
     }
 
-    public LocalDateTime getCheckInDate() {
+    public LocalDate getCheckInDate() {
         return checkInDate;
     }
 
-    public void setCheckInDate(LocalDateTime checkInDate) {
+    public void setCheckInDate(LocalDate checkInDate) {
         this.checkInDate = checkInDate;
     }
 
-    public LocalDateTime getCheckOutDate() {
+    public LocalDate getCheckOutDate() {
         return checkOutDate;
     }
 
-    public void setCheckOutDate(LocalDateTime checkOutDate) {
+    public void setCheckOutDate(LocalDate checkOutDate) {
         this.checkOutDate = checkOutDate;
     }
 

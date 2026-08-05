@@ -29,5 +29,6 @@ public class GuestProfileDto {
     @NotBlank(message = "Preferred language is required")
     private String preferredLanguage;
 
+    @NotNull(message = "Guest ID is required")
     private Long guestId;
 }
